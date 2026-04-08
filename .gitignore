@@ -1,0 +1,42 @@
+.openclaude-profile.json
+.pytest_chache
+.git
+ChatGPT.md
+Description.md
+SDD.md
+SDD_task.md
+chat09_04_2026.md
+# Python
+__pycache__/
+tests/__pycache__/
+app/core/__pycache__/
+app/client/__pycache__/
+app/handlers/__pycache__/
+app/services/__pycache__/
+app/__pycache__/
+thinkerbot.egg-info
+
+*.py[cod]
+*.pyo
+
+# Virtual env
+.venv/
+venv/
+
+# Env files
+.env
+
+# Build / packaging
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log

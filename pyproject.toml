@@ -1,0 +1,17 @@
+[project]
+name = "thinkerbot"
+version = "0.1.0"
+description = "Telegram bot with local LLM integration"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "aiogram>=3.0.0",
+    "httpx>=0.24.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
