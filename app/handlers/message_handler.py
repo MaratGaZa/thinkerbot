@@ -9,6 +9,22 @@ from app.core.logger import logger
 from app.services.llm_service import LLMService
 
 
+def split_text(text: str, max_length: int = 4000) -> list[str]:
+    """Split text into chunks for Telegram message limit.
+
+    Telegram allows maximum 4096 characters per message.
+    This function splits text into chunks of max_length.
+
+    Args:
+        text: Text to split.
+        max_length: Maximum length per chunk (default 4000).
+
+    Returns:
+        List of text chunks.
+    """
+    return [text[i : i + max_length] for i in range(0, len(text), max_length)]
+
+
 class MessageHandler:
     """Handler for incoming Telegram messages."""
 
@@ -43,8 +59,12 @@ class MessageHandler:
             model=model,
         )
 
-        await message.answer(response)
-        logger.info(f"Sent response to user {user_id}")
+        # Разбиваем ответ на части если он слишком длинный
+        parts = split_text(response)
+        for part in parts:
+            await message.answer(part)
+
+        logger.info(f"Sent response to user {user_id} ({len(parts)} message(s))")
 
     async def handle_other_content(self, message: Message) -> None:
         """Handle non-text messages by ignoring them.
