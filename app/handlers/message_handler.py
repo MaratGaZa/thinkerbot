@@ -54,10 +54,16 @@ class MessageHandler:
         user_id = message.from_user.id
         logger.info(f"Received message from user {user_id}")
 
+        # Отправляем уведомление о начале обработки
+        thinking_msg = await message.answer("⏳ Thinking...")
+
         response = await self.llm_service.process_message(
             text=message.text,
             model=model,
         )
+
+        # Удаляем сообщение "Thinking..."
+        await thinking_msg.delete()
 
         # Разбиваем ответ на части если он слишком длинный
         parts = split_text(response)
