@@ -16,15 +16,22 @@ from app.core.logger import logger
 class OllamaClient:
     """Async client for interacting with Ollama LLM API."""
 
-    def __init__(self, base_url: str, timeout: int = 30) -> None:
+    # Timeout по умолчанию: connect=10s, read=120s (для медленных LLM), write=30s, pool=10s
+    DEFAULT_TIMEOUT = httpx.Timeout(connect=10.0, read=120.0, write=30.0, pool=10.0)
+
+    def __init__(
+        self,
+        base_url: str,
+        timeout: httpx.Timeout | None = None,
+    ) -> None:
         """Initialize Ollama client.
 
         Args:
             base_url: Base URL of Ollama API.
-            timeout: Request timeout in seconds.
+            timeout: Request timeout configuration. Uses DEFAULT_TIMEOUT if not provided.
         """
         self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
+        self.timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
         self._client: httpx.AsyncClient | None = None
 
     async def _get_client(self) -> httpx.AsyncClient:
