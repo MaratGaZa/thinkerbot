@@ -67,14 +67,14 @@ class OllamaClient:
         client = await self._get_client()
         url = f"{self.base_url}/api/generate"
 
-        # Ограничиваем количество токенов для предотвращения длинных ответов
-        # и ускорения генерации
+        # num_predict: -1 = без ограничений (модель сама решает когда закончить)
+        # Это предотвращает обрезание ответа
         payload = {
             "model": model,
             "prompt": prompt,
             "stream": False,
             "options": {
-                "num_predict": 512,  # максимум 512 токенов в ответе
+                "num_predict": -1,  # без ограничений
             },
         }
 
