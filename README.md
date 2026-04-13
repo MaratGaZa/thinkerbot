@@ -5,7 +5,7 @@ Telegram-бот, который принимает текстовые сообщ
 ## Требования
 
 - Python 3.12+
-- Ollama с установленной моделью `qwen3.5:4b` или `qwen3.5:9b`
+- Ollama с установленной моделями: `qwen2.5:3b`, `qwen3.5:0.8b`, `qwen3.5:2b`, `qwen3.5:4b`, `gpt-oss:20b`.
 - Telegram Bot Token
 
 ## Установка

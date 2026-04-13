@@ -23,7 +23,7 @@ class Config:
         # Timeout для read (генерация ответа LLM) - 120 секунд
         self.timeout: httpx.Timeout = httpx.Timeout(
             connect=10.0,
-            read=float(os.getenv("TIMEOUT_READ", "120")),
+            read=float(os.getenv("TIMEOUT_READ", "180")),
             write=30.0,
             pool=10.0,
         )
