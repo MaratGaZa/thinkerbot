@@ -17,8 +17,10 @@ from aiogram.types import (
 from app.clients.ollama_client import OllamaClient
 from app.core.config import config
 from app.core.logger import logger
+from app.core.system_prompt import SystemPromptProvider
 from app.handlers.message_handler import MessageHandler
 from app.services.llm_service import LLMService
+from app.history.history_manager import HistoryManager
 
 
 class BotState:
@@ -91,7 +93,9 @@ def get_welcome_text() -> str:
         "⚙️ **Команды:**\n"
         "/start - Запустить бота и показать это сообщение\n"
         "/help - Информация о боте\n"
-        "/model - Выбрать модель для обработки\n\n"
+        "/model - Выбрать модель для обработки\n"
+        "/sys - Изменить системный промпт (поведение бота)\n"
+        "/sysreset - Сбросить системный промпт к умолчанию\n\n"
         "🧠 **Доступные модели:**\n"
         "• турба — быстрая, для простых задач\n"
         "• турба версия 2 — самая лёгкая и быстрая\n"
@@ -153,6 +157,44 @@ def register_handlers(
             reply_markup=keyboard,
         )
 
+    @dp.message(lambda msg: msg.text and msg.text.startswith("/sys "))
+    async def sys_command(message: Message) -> None:
+        """Handle /sys command - change system prompt.
+
+        Usage: /sys <new system prompt>
+        """
+        new_prompt = message.text[5:].strip()  # Remove "/sys " prefix
+        if not new_prompt:
+            await message.answer(
+                "❌ Использование: `/sys <текст промпта>`\n\n"
+                "Пример: `/sys Ты опытный программист, отвечаешь кратко по делу`",
+                parse_mode="Markdown",
+            )
+            return
+
+        SystemPromptProvider.set_prompt(new_prompt)
+        logger.info(f"System prompt changed by user {message.from_user.id}: {new_prompt[:50]}...")
+        await message.answer(
+            "✅ Системный промпт изменён:\n\n"
+            f"_{new_prompt}_",
+            parse_mode="Markdown",
+        )
+
+    @dp.message(lambda msg: msg.text == "/sysreset")
+    async def sysreset_command(message: Message) -> None:
+        """Handle /sysreset command - reset system prompt to default."""
+        SystemPromptProvider.set_prompt(
+            "You are ThinkerBot, a helpful Telegram bot assistant "
+            "powered by a local LLM. You provide concise, accurate, "
+            "and context-aware responses to user messages. "
+            "You maintain conversation context and refer to previous "
+            "messages when relevant."
+        )
+        logger.info(f"System prompt reset to default by user {message.from_user.id}")
+        await message.answer(
+            "✅ Системный промпт сброшен к значению по умолчанию",
+        )
+
     @dp.callback_query(lambda c: c.data.startswith("set_model_"))
     async def set_model_callback(callback: CallbackQuery) -> None:
         """Handle model selection callback."""
@@ -192,7 +234,19 @@ async def run_polling() -> None:
         timeout=config.timeout,
     )
     llm_service = LLMService(client=ollama_client)
-    message_handler = MessageHandler(llm_service=llm_service)
+
+    # Initialize history manager with config settings
+    history_manager = HistoryManager(
+        max_messages=config.history_max_messages,
+        max_tokens=config.history_max_tokens,
+        summarize_trigger=config.history_summarize_trigger,
+    )
+
+    message_handler = MessageHandler(
+        llm_service=llm_service,
+        history_manager=history_manager,
+        enable_history=config.enable_history,
+    )
 
     bot = create_bot()
     dp = create_dispatcher()
@@ -201,6 +255,8 @@ async def run_polling() -> None:
 
     logger.info(f"Using model: {BotState.current_model}")
     logger.info(f"Available models: {config.AVAILABLE_MODELS}")
+    logger.info(f"History enabled: {config.enable_history}")
+    logger.info(f"History limits: max_messages={config.history_max_messages}, max_tokens={config.history_max_tokens}")
     logger.info("Bot started with polling mode")
 
     try:

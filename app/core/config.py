@@ -27,6 +27,19 @@ class Config:
             write=30.0,
             pool=10.0,
         )
+        # Context management settings
+        self.history_max_messages: int = int(os.getenv("HISTORY_MAX_MESSAGES", "20"))
+        self.history_max_tokens: int = int(os.getenv("HISTORY_MAX_TOKENS", "2000"))
+        # Summarization trigger: after N messages, old messages are summarized
+        # Default: 5 messages (as per requirement)
+        self.history_summarize_trigger: int = int(
+            os.getenv("HISTORY_SUMMARIZE_TRIGGER", "5")
+        )
+        self.enable_history: bool = os.getenv("ENABLE_HISTORY", "true").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
 
     def validate(self) -> None:
         """Validate required configuration values.
