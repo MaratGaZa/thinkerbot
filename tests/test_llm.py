@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from pathlib import Path
 
 from app.clients.ollama_client import OllamaClient
 from app.core.errors import (
@@ -35,10 +36,12 @@ class TestOllamaClient:
             result = await client.generate_response(prompt="Hello", model="test-model")
 
             assert result == "Test answer"
-            mock_client.post.assert_called_once_with(
-                "http://localhost:11434/api/generate",
-                json={"model": "test-model", "prompt": "Hello", "stream": False},
-            )
+            mock_client.post.assert_called_once()
+            call_kwargs = mock_client.post.call_args.kwargs
+            assert mock_client.post.call_args.args[0] == "http://localhost:11434/api/generate"
+            assert call_kwargs["json"]["model"] == "test-model"
+            assert call_kwargs["json"]["prompt"] == "Hello"
+            assert call_kwargs["json"]["stream"] is False
 
     @pytest.mark.asyncio
     async def test_generate_response_timeout(self) -> None:
@@ -127,9 +130,11 @@ class TestLLMService:
         result = await service.process_message(text="Hello", model="test-model")
 
         assert result == "LLM answer"
-        mock_client.generate_response.assert_called_once_with(
-            prompt="Hello", model="test-model"
-        )
+        mock_client.generate_response.assert_called_once()
+        prompt = mock_client.generate_response.call_args.kwargs["prompt"]
+        assert "<<<SYSTEM>>>" in prompt
+        assert "User: Hello" in prompt
+        assert mock_client.generate_response.call_args.kwargs["model"] == "test-model"
 
     @pytest.mark.asyncio
     async def test_process_message_timeout(self) -> None:
@@ -180,3 +185,21 @@ class TestLLMService:
         result = await service.process_message(text="Hello", model="test-model")
 
         assert result == "Internal error"
+
+    @pytest.mark.asyncio
+    async def test_process_context_logs_user_id(self, tmp_path: Path) -> None:
+        """Test context logging with explicit user_id and token count."""
+        mock_client = AsyncMock()
+        mock_client.generate_response = AsyncMock(return_value="LLM answer")
+
+        service = LLMService(client=mock_client, log_dir=str(tmp_path))
+        context = [
+            {"role": "system", "content": "sys"},
+            {"role": "user", "content": "hello world"},
+        ]
+
+        await service.process_context(context=context, model="test-model", user_id=999)
+
+        log_content = (tmp_path / "context.log").read_text(encoding="utf-8")
+        assert "user_id=999" in log_content
+        assert "tokens=" in log_content

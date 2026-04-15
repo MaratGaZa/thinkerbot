@@ -46,7 +46,7 @@ class HistoryManager:
         self,
         max_messages: int = 20,
         max_tokens: int = 2000,
-        summarize_trigger: int = 10,
+        summarize_trigger: int = 5,
     ) -> None:
         """Initialize history manager.
 
@@ -140,9 +140,12 @@ class HistoryManager:
             return
 
         # Check if summarization is needed
+        message_count = len(messages)
+        token_count = self.count_tokens(user_id)
         needs_summarization = (
-            len(messages) >= self.max_messages or
-            self.count_tokens(user_id) >= self.max_tokens
+            message_count >= self.summarize_trigger
+            or message_count > self.max_messages
+            or token_count > self.max_tokens
         )
 
         if needs_summarization and self._summarization_callback:
@@ -204,6 +207,13 @@ class HistoryManager:
                     break
             else:
                 # All messages are system, break to avoid infinite loop
+                break
+        while self.count_tokens(user_id) > self.max_tokens and messages:
+            for i, msg in enumerate(messages):
+                if msg.role != "system":
+                    messages.pop(i)
+                    break
+            else:
                 break
 
         self._storage[user_id] = messages

@@ -17,6 +17,7 @@ class SystemPromptProvider:
         "You maintain conversation context and refer to previous "
         "messages when relevant."
     )
+    _current_prompt = DEFAULT_SYSTEM_PROMPT
 
     @classmethod
     def get_prompt(cls) -> str:
@@ -25,7 +26,7 @@ class SystemPromptProvider:
         Returns:
             System prompt text.
         """
-        return cls.DEFAULT_SYSTEM_PROMPT
+        return cls._current_prompt
 
     @classmethod
     def set_prompt(cls, prompt: str) -> None:
@@ -34,4 +35,9 @@ class SystemPromptProvider:
         Args:
             prompt: New system prompt text.
         """
-        cls.DEFAULT_SYSTEM_PROMPT = prompt
+        cls._current_prompt = prompt
+
+    @classmethod
+    def reset_prompt(cls) -> None:
+        """Reset prompt to default value."""
+        cls._current_prompt = cls.DEFAULT_SYSTEM_PROMPT

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 
@@ -55,7 +54,12 @@ class LLMService:
         ]
         return await self.process_context(context=context, model=model)
 
-    async def process_context(self, context: list[dict], model: str) -> str:
+    async def process_context(
+        self,
+        context: list[dict],
+        model: str,
+        user_id: int | None = None,
+    ) -> str:
         """Process conversation context and return LLM response.
 
         Args:
@@ -67,7 +71,7 @@ class LLMService:
         """
         try:
             # Log context before sending to LLM
-            self._log_context(context)
+            self._log_context(context, user_id=user_id)
 
             # Convert context to prompt string for Ollama
             prompt = self._context_to_prompt(context)

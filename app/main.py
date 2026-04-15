@@ -157,13 +157,13 @@ def register_handlers(
             reply_markup=keyboard,
         )
 
-    @dp.message(lambda msg: msg.text and msg.text.startswith("/sys "))
+    @dp.message(lambda msg: msg.text == "/sys" or (msg.text and msg.text.startswith("/sys ")))
     async def sys_command(message: Message) -> None:
         """Handle /sys command - change system prompt.
 
         Usage: /sys <new system prompt>
         """
-        new_prompt = message.text[5:].strip()  # Remove "/sys " prefix
+        new_prompt = message.text[4:].strip()  # Remove "/sys" prefix
         if not new_prompt:
             await message.answer(
                 "❌ Использование: `/sys <текст промпта>`\n\n"
@@ -183,13 +183,7 @@ def register_handlers(
     @dp.message(lambda msg: msg.text == "/sysreset")
     async def sysreset_command(message: Message) -> None:
         """Handle /sysreset command - reset system prompt to default."""
-        SystemPromptProvider.set_prompt(
-            "You are ThinkerBot, a helpful Telegram bot assistant "
-            "powered by a local LLM. You provide concise, accurate, "
-            "and context-aware responses to user messages. "
-            "You maintain conversation context and refer to previous "
-            "messages when relevant."
-        )
+        SystemPromptProvider.reset_prompt()
         logger.info(f"System prompt reset to default by user {message.from_user.id}")
         await message.answer(
             "✅ Системный промпт сброшен к значению по умолчанию",

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from aiogram import types
 from aiogram.types import Message
 
 from app.core.logger import logger
@@ -118,14 +117,6 @@ class MessageHandler:
         """
         user_id = message.from_user.id
 
-        # Get existing history
-        history = self.history_manager.get(user_id)
-
-        # Build context: system prompt + history + current message
-        system_prompt = SystemPromptProvider.get_prompt()
-        context = [{"role": "system", "content": system_prompt}]
-        context.extend([msg.to_dict() for msg in history])
-        context.append({"role": "user", "content": message.text})
 
         # Add user message to history
         user_msg = HistoryMessage(role="user", content=message.text)
@@ -134,13 +125,27 @@ class MessageHandler:
         # Enforce limits (may trigger summarization)
         await self.history_manager.enforce_limits(user_id)
 
+        # Build context from the latest history (after possible summarization/trim)
+        history = self.history_manager.get(user_id)
+        system_prompt = SystemPromptProvider.get_prompt()
+        context = [{"role": "system", "content": system_prompt}]
+        context.extend(
+            {"role": msg.role, "content": msg.content}
+            for msg in history
+        )
+
         # Process context and get response
-        response = await self.llm_service.process_context(context=context, model=model)
+        response = await self.llm_service.process_context(
+            context=context,
+            model=model,
+            user_id=user_id,
+        )
 
         # Add assistant response to history
         if response:
             assistant_msg = HistoryMessage(role="assistant", content=response)
             self.history_manager.add(user_id, assistant_msg)
+            await self.history_manager.enforce_limits(user_id)
 
         return response
 
